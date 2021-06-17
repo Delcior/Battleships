@@ -39,15 +39,17 @@ class Map:
         print(msg_choice)
         print(msg_options)
     def generateMap(self):
-        # for i in range(4, 0, -1):
-        #     self._placeBoats(i)
-        #     print("======po ulozeniu %d" % (i,))
-        #     print(self.mapa)
-        #     print("===================")
-        self._placeBoats(4)
-        print("======po ulozeniu %d" % (4,))
+        for i in range(4, 0, -1):
+            self._placeBoats(i)
+            # print("======po ulozeniu %d" % (i,))
+            # print(self.mapa)
+            # print(np.sum(self.mapa))
+            # print("===================")
+        # self._placeBoats(4)
+        # print("======po ulozeniu %d" % (4,))
         print(self.mapa)
-        print("===================")
+        print(np.sum(self.mapa))
+        # print("===================")
 
     def _placeBoats(self, length):
         while self._boats[length] > 0:
@@ -55,7 +57,7 @@ class Map:
             y = random.randint(0, 10)
             coords = (x, y)#np.array([x, y])
 
-            if coords not in self._notAvailable:
+            if self._isGood(coords):
                 #0 - góra
                 #1 - prawo itd..
                 for i in range(4):
@@ -67,28 +69,26 @@ class Map:
                         break
 
 
-
     def _chooseDirection(self, point, direction, len):
         if not self._isGood(point):
             return False, None, None
         #TODO: USUN MAP_COPY :)
-        map_copy = self.mapa
+        map_copy = np.copy(self.mapa)
         points = {point}
+        points = self._addNeighbours(point, points)
         map_copy[point[0], point[1]] = 1
-        print(point, direction, len)
+
         if direction == 0:
             for i in range(len-1):
-                print(i)
-                point = (point[0], point[0]+1)
+                point = point[0], point[1]+1
                 if not self._isGood(point):
                     return False, None, None
-                print((point[0], point[0]+1))
                 points.add(point)
                 map_copy[point[0], point[1]] = 1
                 points = self._addNeighbours(point, points)
         elif direction == 1:
             for i in range(len-1):
-                point = (point[0]+1, point[0])
+                point = (point[0]+1, point[1])
                 if not self._isGood(point):
                     return False, None, None
                 points.add(point)
@@ -96,7 +96,7 @@ class Map:
                 points = self._addNeighbours(point, points)
         elif direction == 2:
             for i in range(len-1):
-                point = (point[0], point[0]-1)
+                point = (point[0], point[1]-1)
                 if not self._isGood(point):
                     return False, None, None
                 points.add(point)
@@ -104,7 +104,7 @@ class Map:
                 points = self._addNeighbours(point, points)
         elif direction == 3:
             for i in range(len-1):
-                point = (point[0]-1, point[0])
+                point = (point[0]-1, point[1])
                 if not self._isGood(point):
                     return False, None, None
                 points.add(point)
@@ -148,12 +148,16 @@ def rec(sock, crlf):
 
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
+#algorytm musi sprawdzac dookoła wszystko
+#powinien zaczynac w losowym punkcie i sie rozszerzac tam gdzie moze
+# układa statki obok siebie
 # point = (1,2)
 # print(type(point))
 # point = (point[0]+1, point[1])
 # print(point)
 klasa = Map()
 klasa.generateMap()
+
 # try:
 #     s.connect(('localhost', 1769))
 #
