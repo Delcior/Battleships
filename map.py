@@ -14,6 +14,7 @@ class Map:
         self._buildMap()
         print("===============Twoja mapa===============")
         print(self.mapa)
+        return self.mapa
         
     def _buildMap(self):
         while self._buildingMap:
@@ -92,13 +93,14 @@ class Map:
     def generateMap(self):
         for i in range(4, 0, -1):
             self._placeBoats(i)
+        return self.mapa
         # print(self.mapa)
         # print(np.sum(self.mapa))
 
     def _placeBoats(self, length):
         while self._boats[length] > 0:
-            x = random.randint(0, 10)
-            y = random.randint(0, 10)
+            x = random.randint(0, 9)
+            y = random.randint(0, 9)
             coords = (x, y)#np.array([x, y])
 
             if self._isGood(coords):

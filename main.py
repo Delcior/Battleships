@@ -6,55 +6,24 @@ import random
 import numpy as np
 from concurrent.futures import ThreadPoolExecutor
 import pickle
-#import rsa
+# import rsa
+import map
 from threading import Thread
-
+from board import *
+from map import *
 """
 kod\r\nwiadomosc\r\nklucz..\r\n\r\n
 
 
-212
-
 "211\r\nMessage=hello,give me your key.There is my key\r\nKey=key\r\nKey-len:2048\r\n\r\n"
 
+
+
+"401\r\nx:3\r\ny:4\r\n\r\n"
+
 """
-class Map:
-    def __init__(self):
-        self.mapa = np.zeros((10, 10))
-        self.pozycje = []
-        self._cztery = 1
-        self._trzy = 2
-        self._dwa = 3
-        self._jeden = 4
 
-
-    def buildMap(self):
-
-        pass
-
-    def _printInfo(self):
-        msg_choice = "Masz do wyboru:\n" \
-              " czteromasztowców: {czt}\n" \
-              " trójmasztowców: {czy}\n" \
-              " dwumasztowców:{dwa}\n" \
-              " jednomasztowców: {jed}".format(
-            czt=self._cztery,
-            czy=self._trzy,
-            dwa=self._dwa,
-            jed=self._jeden)
-
-        msg_options = "\n ====Menu====\n" \
-                      "[1] rozstaw jednomasztowiec\n" \
-                      "[2] rozstaw dwumasztowiec\n" \
-                      "[3] rozstaw trójmasztwoiec\n" \
-                      "[4] roztaw czwórmasztwiec\n" \
-                      "[enter] Zaakceptuj (brak statków zostanie uzupełniony losowo)"
-        print(self.mapa)
-        print(msg_choice)
-        print(msg_options)
-
-
-def RamkaParser(data):
+def HandshakeParser(data):
     results = {}
     data = data.split('\r\n')
     try:
@@ -65,7 +34,7 @@ def RamkaParser(data):
 
     results['code'] = code
 
-    #TODO:co jesli jest blad
+    # TODO:co jesli jest blad
     if "Message=" == data[1][:8]:
         results['message'] = data[1][8:]
     if "Key=" == data[2][:4]:
@@ -74,6 +43,7 @@ def RamkaParser(data):
         results['key-len'] = int(data[3][8:])
 
     return results
+
 
 class HelloHandshake:
     def __init__(self):
@@ -89,7 +59,7 @@ class HelloHandshake:
         if data == "201\r\nHello":
             self.codes[201] = True
             # read key from file
-            #TODO: add trycatch
+            # TODO: add trycatch
             publicKey = open("./publicKey.crt", "r")
 
             message = "211\r\nMessage=Hello,give me your key.\r\n" \
@@ -99,8 +69,8 @@ class HelloHandshake:
 
     def accept_212(self, data):
 
-        headers = RamkaParser(data)
-        #assert headers['key-len'] >= 2048
+        headers = HandshakeParser(data)
+        # assert headers['key-len'] >= 2048
 
         if headers['code'] == 211 and self.codes[201]:
             self.clientPubKey = headers['key']
@@ -109,8 +79,8 @@ class HelloHandshake:
                    '101\r\nInfo:Zbuduj mape\r\n\r\n'
 
         return "301\r\nERROR"
-            # klient 211\r\nMessage=There is my key\r\nKey={key}\r\nKey-len=2048\r\n\r\n
-    #def accept_202(self, data):
+        # klient 211\r\nMessage=There is my key\r\nKey={key}\r\nKey-len=2048\r\n\r\n
+    # def accept_202(self, data):
 
 
 class BattleshipProtocol(asyncio.Protocol):
@@ -120,26 +90,52 @@ class BattleshipProtocol(asyncio.Protocol):
         self._rest = b''
         self.name = None
         self.HelloHandshake = HelloHandshake()
+        self.board = Board()
         print('Connection from {}'.format(self.addr))
 
     def data_received(self, data):
         data = self._rest + data
-
 
         if not self.HelloHandshake.finished:
             data = data.decode()
             if int(data[:3]) == 201:
                 message = self.HelloHandshake.accept_201(data)
                 self.transport.write(message.encode())
+                print(message)
             elif int(data[:3]) == 211:
                 message = self.HelloHandshake.accept_212(data)
                 self.transport.write(message.encode())
                 print(message)
             return
+        if int(data[:3].decode()) == 400:
+            data = data[5:]
+            client_map = pickle.loads(data)
 
-        mapa = pickle.loads(data)
-        mapa._printInfo()
-        # fib_num = int(data.de```code())
+            self.board.setMap("client", client_map)
+            server_map = Map().generateMap()
+            self.board.setMap("server", server_map)
+            message = "401\r\nLet the game begin!\r\n\r\n"
+            self.transport.write(message.encode())
+
+        elif int(data[:3].decode()) == 405:
+            code, message = self.board.client_move(data.decode())
+            print(code)
+            print(message)
+            self.transport.write(message.encode())
+
+            while code == 421 or code == 422 or code == 413:
+                code, message, client_map = self.board.server_move()
+                message = message.encode()
+                client_map = pickle.dumps(client_map) + b"\r\n\r\n"
+                message += client_map
+                self.transport.write(message)
+
+            if code == 431 or code == 432:
+                message = "450\r\nIf u want to play again send your map\r\n"
+                self.transport.write(message.encode())
+
+
+        # fib_num = int(data.decode())
         #
         # task = asyncio.create_task(self.async_fib(fib_num))
 
@@ -150,12 +146,10 @@ class BattleshipProtocol(asyncio.Protocol):
         ###  serwer wysyla informacje o wyborze opcji
         ###  klient wysyla w odpowiedzi swoj wybor
         ###  wybor serwer:
-            ###  serwer generuje swoja mape, a klient tworzy swoja mape
-            ###  klient wysyla mape do serwera
-            ###  serwer zwraca odpowiedz o poprawnosci
-            ###  rozpoczyna sie gra
-
-
+        ###  serwer generuje swoja mape, a klient tworzy swoja mape
+        ###  klient wysyla mape do serwera
+        ###  serwer zwraca odpowiedz o poprawnosci
+        ###  rozpoczyna sie gra
 
     def connection_lost(self, ex):
         print('Client {} disconnected'.format(self.addr))
