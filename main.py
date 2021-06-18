@@ -3,13 +3,15 @@ Serwer TCP
 '''
 import asyncio
 import random
+from time import sleep
+
 import numpy as np
 from concurrent.futures import ThreadPoolExecutor
 import pickle
 # import rsa
 import map
 from threading import Thread
-from board import *
+from game_server import *
 from map import *
 """
 kod\r\nwiadomosc\r\nklucz..\r\n\r\n
@@ -90,7 +92,7 @@ class BattleshipProtocol(asyncio.Protocol):
         self._rest = b''
         self.name = None
         self.HelloHandshake = HelloHandshake()
-        self.board = Board()
+        self.game_server = Game_server()
         print('Connection from {}'.format(self.addr))
 
     def data_received(self, data):
@@ -111,27 +113,28 @@ class BattleshipProtocol(asyncio.Protocol):
             data = data[5:]
             client_map = pickle.loads(data)
 
-            self.board.setMap("client", client_map)
+            self.game_server.setMap("client", client_map)
             server_map = Map().generateMap()
-            self.board.setMap("server", server_map)
+            print(server_map)
+            self.game_server.setMap("server", server_map)
             message = "401\r\nLet the game begin!\r\n\r\n"
             self.transport.write(message.encode())
 
         elif int(data[:3].decode()) == 405:
-            code, message = self.board.client_move(data.decode())
-            print(code)
-            print(message)
+            code, message = self.game_server.client_move(data.decode())
             self.transport.write(message.encode())
 
             while code == 421 or code == 422 or code == 413:
-                code, message, client_map = self.board.server_move()
+                code, message, client_map = self.game_server.server_move()
                 message = message.encode()
                 client_map = pickle.dumps(client_map) + b"\r\n\r\n"
                 message += client_map
                 self.transport.write(message)
+                if code == 421 or code == 422:
+                    sleep(5)
 
             if code == 431 or code == 432:
-                message = "450\r\nIf u want to play again send your map\r\n"
+                message = "450\r\nIf u want to play again send your map\r\n\r\n"
                 self.transport.write(message.encode())
 
 

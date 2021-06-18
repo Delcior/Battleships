@@ -3,7 +3,7 @@ import random
 
 class Map:
     def __init__(self):
-        self.mapa = np.zeros((10, 10))
+        self.mapa = np.zeros((10, 10), dtype=int)
         self.pozycje = []
         self._notAvailable = set()
         self._boats = {1:4, 2:3, 3:2, 4:1}
@@ -86,9 +86,31 @@ class Map:
                       "[3] rozstaw trójmasztwoiec\n" \
                       "[4] roztaw czteromasztowiec\n" \
                       "[0] Zaakceptuj (brak statków zostanie uzupełniony losowo)"
-        print(self.mapa)
+        self._print_map()
         print(msg_choice,end='')
         print(msg_options)
+    def _print_map(self):
+        print("Twoja mapa")
+        board = self.mapa
+        print("-", end="  ")
+        for j in range(board.shape[1]):
+            print(j, end="  ")
+
+        print()
+        for i in range(board.shape[0]):
+            print(i, end="  ")
+            for j in range(board.shape[1]):
+                ch = ''
+                if board[i, j] == 0:
+                    ch = '\''
+                elif board[i, j] == 1:
+                    ch = 'S'
+                elif board[i, j] == 2:
+                    ch = '*'
+                # elif board[i, j] == 3:
+                #     ch = 'X'
+                print(ch, end="  ")
+            print()
 
     def generateMap(self):
         for i in range(4, 0, -1):
