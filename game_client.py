@@ -6,10 +6,11 @@ import pickle
 
 
 class Game_client:
-    def __init__(self, s, board):
+    def __init__(self, s, board, ciph):
         self._shooting_board = np.zeros((10,10))
         self._board = board
         self._s = s
+        self._ciph = ciph
 
     def startGame(self):
         while True:
@@ -21,7 +22,7 @@ class Game_client:
                 continue
             else:
                 self._shooting_board[x, y] = 2
-            self._s.sendall("405\r\nx:{x}\r\ny:{y}\r\n\r\n".format(x=x, y=y).encode())
+            self._s.sendall(self._ciph.encrypt(("405\r\nx:{x}\r\ny:{y}\r\n\r\n".format(x=x, y=y))))
 
             msg = self._rec()
             print(msg)
@@ -55,14 +56,14 @@ class Game_client:
         data_rec = b''
         while not data_rec.endswith(crlf):
             data_rec += self._s.recv(1)
-        return data_rec[:-4]
+        return self._ciph.decrypt(data_rec[:-4])[:-4]
 
     def _rec(self):
         crlf = b"\r\n\r\n"
         data_rec = b''
         while not data_rec.endswith(crlf):
             data_rec += self._s.recv(1)
-        return data_rec[:-4].decode()
+        return self._ciph.decrypt(data_rec[:-4])[:-4].decode()
 
     def _print_boards(self):
         print("Twoja mapa =============================== Mapa strzałów")
