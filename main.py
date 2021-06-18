@@ -4,6 +4,7 @@ Serwer TCP
 import asyncio
 import random
 from time import sleep
+from utils import *
 
 import numpy as np
 from concurrent.futures import ThreadPoolExecutor
@@ -17,7 +18,7 @@ from map import *
 kod\r\nwiadomosc\r\nklucz..\r\n\r\n
 
 
-"211\r\nMessage=hello,give me your key.There is my key\r\nKey=key\r\nKey-len:2048\r\n\r\n"
+"211\r\nMessage=hello,give me your key.\r\nKey=key\r\nKey-len:2048\r\n\r\n"
 
 
 
@@ -51,7 +52,6 @@ class HelloHandshake:
     def __init__(self):
         self.codes = {}
         self.finished = False
-        self.clientPubKey = ""
 
     def accept_201(self, data):
         """
@@ -60,13 +60,10 @@ class HelloHandshake:
         """
         if data == "201\r\nHello":
             self.codes[201] = True
-            # read key from file
-            # TODO: add trycatch
-            publicKey = open("./publicKey.crt", "r")
 
             message = "211\r\nMessage=Hello,give me your key.\r\n" \
                       "Key={key}\r\nKey-len=2048\r\n\r\n".format(
-                key=publicKey.read())
+                key=ciphering.get_pubKey())
             return message
 
     def accept_212(self, data):
@@ -75,7 +72,7 @@ class HelloHandshake:
         # assert headers['key-len'] >= 2048
 
         if headers['code'] == 211 and self.codes[201]:
-            self.clientPubKey = headers['key']
+            ciphering.set_pubKey2(headers['key'])
             self.finished = True
             return '210\r\nMessage=Od teraz wszystkie wiadomosci sa szyfrowane\r\n\r\n' \
                    '101\r\nInfo:Zbuduj mape\r\n\r\n'
@@ -96,6 +93,7 @@ class BattleshipProtocol(asyncio.Protocol):
         print('Connection from {}'.format(self.addr))
 
     def data_received(self, data):
+        print(data)
         data = self._rest + data
 
         if not self.HelloHandshake.finished:
@@ -164,9 +162,14 @@ class BattleshipProtocol(asyncio.Protocol):
     #     self.transport.write(response)
 
 
+print(__name__)
 thread_pool = ThreadPoolExecutor()
 loop = asyncio.get_event_loop()
 coroutine = loop.create_server(BattleshipProtocol, host='localhost', port=1769)
 server = loop.run_until_complete(coroutine)
 
 loop.run_forever()
+
+
+if __name__ == '__main__':
+    ciphering = EncryptorDecryptor()
