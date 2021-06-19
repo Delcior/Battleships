@@ -4,10 +4,10 @@ import pickle
 
 class Game_client:
     def __init__(self, s, board, ciph):
-        self._legend = {0:'\': woda',
-                        1: 'S: statek',
-                        2: '*: oddany strzał',
-                        3: 'X: trafiony statek przeciwnika'}
+        self._legend = {0:'\': Ocean',
+                        1: 'S: Ship',
+                        2: '*: Shot fired',
+                        3: 'X: Hit enemy ship'}
         self._shooting_board = np.zeros((10, 10))
         self._board = board
         self._s = s
@@ -16,15 +16,15 @@ class Game_client:
     def startGame(self):
         while True:
             self._print_boards()
-            coords = input("Podaj koordynaty do strzału [0-9],[0,9]")
+            coords = input("Give the coordinates for the shot [0-9],[0-9]")
             try:
                 x, y = int(coords[0]), int(coords[2])
             except:
-                print("Niepoprawny format koordynatów. Spróbuj ponownie")
+                print("Invalid coordinate format. Try again.")
                 continue
 
             if self._shooting_board[x, y] == 2 or self._shooting_board[x, y] == 3:
-                print("Już strzelałeś w to miejsce")
+                print("You've already shot at this place.")
                 continue
             else:
                 self._shooting_board[x, y] = 2
@@ -66,7 +66,7 @@ class Game_client:
         return self._ciph.decrypt(data_rec[:-4])[:-4].decode()
 
     def _print_boards(self):
-        print(" " * 10 + "Twoja mapa " + "<" + "=" * 29 + ">" + " Mapa strzałów")
+        print(" " * 10 + "Your map " + "<" + "=" * 29 + ">" + " Enemy map")
 
         print("-", end="  ")
         for j in range(self._board.shape[1]):
@@ -76,7 +76,7 @@ class Game_client:
         for j in range(self._board.shape[1]):
             print(j, end="  ")
 
-        print("LEGENDA:")
+        print("LEGEND:")
         for i in range(self._board.shape[0]):
             print(i, end="  ")
             for j in range(self._board.shape[1]):

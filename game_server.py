@@ -44,12 +44,12 @@ class Game_server:
                     x_n, y_n = el
                     if 0 <= x_n < 10 and 0 <= y_n < 10:
                         if self._server_map[x_n, y_n] == 1:
-                            return 411, "411\r\nHit!\r\n\r\n"
+                            return 411, "411\r\nYou: Hit!\r\n\r\n"
 
-                return 412, "412\r\nHit and sink!\r\n\r\n"
-            return 413, "413\r\nMiss!\r\n\r\n"
+                return 412, "412\r\nYou: Hit and sink!\r\n\r\n"
+            return 413, "413\r\nYou: Miss!\r\n\r\n"
         else:
-            return 350, "350\r\n Coordinates message is not valid.\r\n\r\n"
+            return 350, "350\r\nCoordinates message is not valid.\r\n\r\n"
 
     def server_move(self):
 
@@ -61,7 +61,7 @@ class Game_server:
             self._client_boats_counter -= 1
             self._client_map[x, y] = 3
             if self._client_boats_counter == 0:
-                return 432, "432\r\nI shoot {x},{y}. Of course I won!\r\n\r\n".format(x=x, y=y), self._client_map
+                return 432, "432\r\nServer: I shoot {x},{y}. Of course I won!\r\n\r\n".format(x=x, y=y), self._client_map
 
             neighbours = [(x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)]
 
@@ -69,9 +69,9 @@ class Game_server:
                 x_n, y_n = el
                 if 0 <= x_n < 10 and 0 <= y_n < 10:
                     if self._client_map[x_n, y_n] == 1:
-                        return 421, "421\r\nI shoot {x},{y}. I hit!\r\n\r\n".format(x=x, y=y), self._client_map
+                        return 421, "421\r\nServer: I shoot {x},{y}. I hit!\r\n\r\n".format(x=x, y=y), self._client_map
 
-            return 422, "422\r\nI shoot {x},{y}. Your battleship sinks!\r\n\r\n", self._client_map
+            return 422, "422\r\nServer: I shoot {x},{y}. Your battleship sinks!\r\n\r\n".format(x=x, y=y), self._client_map
         elif self._client_map[x, y] == 0:
             self._client_map[x, y] = 2
-        return 423, "423\r\nI missed!\r\n\r\n", self._client_map
+        return 423, "423\r\nServer: I missed!\r\n\r\n", self._client_map

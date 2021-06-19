@@ -29,8 +29,8 @@ class HelloHandshake:
 
     def accept_201(self, data):
         """
-        Funkcja przyjmuje wiadomość powitalną, zwraca ramkę z odpowiedzią
-        (klucz publiczny serwera i długość tego klucza)
+        The function accepts a welcome message, returns a frame with the response
+        (server public key and length of this key)
         """
         if data == "201\r\nHello\r\n\r\n":
             self.codes[201] = True
@@ -44,7 +44,6 @@ class HelloHandshake:
     def accept_212(self, data):
         if "212\r\nMessage=My key\r\nKey-len=2048\r\nKey=" in data:
             headers = HandshakeParser(data)
-            print(data)
             if headers['key'] == 'Bad key':
                 return "397: Key format is not valid.\r\n\r\n"
             if headers['code'] == 212 and self.codes[201]:
@@ -53,8 +52,8 @@ class HelloHandshake:
                 except:
                     return "396: Key is not valid. Try again\r\n\r\n"
                 self.finished = True
-                return '210\r\nMessage=Od teraz wszystkie wiadomosci sa szyfrowane\r\n\r\n' \
-                       '101\r\nInfo:Zbuduj mape\r\n\r\n'
+                return '210\r\nMessage=All messages are now encrypted \r\n\r\n' \
+                       '101\r\nInfo:Build a map\r\n\r\n'
 
         return "398:\r\nMessage type not recognized. Try again. Remember we accept only RSA keys with length " \
                "2048\r\n\r\n "
@@ -120,7 +119,7 @@ class BattleshipProtocol(asyncio.Protocol):
                 message = client_map
                 self.transport.write(ciphering.encrypt(message) + b'\r\n\r\n')
                 if code == 421 or code == 422:
-                    sleep(3)
+                    sleep(2)
 
             if code == 431 or code == 432:
                 message = "450\r\nIf u want to play again send your map\r\n\r\n"
