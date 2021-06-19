@@ -1,5 +1,5 @@
 # Gra w statki
-Implementacja gry w statki w języku Python 3 z wykorzystaniem architektury klientserwer obsługującej wielu graczy jednocześnie z użyciem szyfrowanych połączeń.
+Implementacja gry w statki w języku Python 3 z wykorzystaniem architektury klient-serwer obsługującej wielu graczy jednocześnie z użyciem szyfrowanych połączeń.
 
 # Twórcy
 
