@@ -8,7 +8,8 @@ class Map:
         self._notAvailable = set()
         self._boats = {1:4, 2:3, 3:2, 4:1}
         self._buildingMap = True
-        self._directions = {'N':(-1,0), 'S':(1,0), 'E':(0,1), 'W':(0,-1)}
+        #self._directions = {'N':(-1,0), 'S':(1,0), 'E':(0,1), 'W':(0,-1)}
+        self._directions = {'N': 3, 'S': 1, 'E': 0, 'W': 2}
         self._menu = {0:"[1] rozstaw jednomasztowca", 1:"[2] rozstaw dwumasztowca",
                       2:"[3] rozstaw trójmasztowca", 3:"[4] rozstaw czteromasztowca",
                       4:"[0] zaakceptuj (rozstaw losowo)"}
@@ -29,10 +30,8 @@ class Map:
                 print("Nie możesz już postawić tego statku")
                 continue
             else:
-                flag = self._placeBoat(command)
-                if flag:
-                    #zmniejszam ilosc stateczkow
-                    self._boats[command] -= 1
+                self._placeBoat(command)
+
             self._buildingMap = not sum(self._boats.values()) == 0
 
     def _placeBoat(self, length):
@@ -41,14 +40,14 @@ class Map:
         start = (int(start[0]), int(start[1]))
         direction = input("Podaj kierunek [N, S, E, W]: ") if length > 1 else "N"
 
-        pts = self._checkBoat(start, length, direction)
+        flag, points, map = self._chooseDirection(start, self._directions[direction], length)
+        if flag:
+            self.mapa = map
+            self._excludePoints(points)
+            self._boats[length] -= 1
 
-        if pts is None:
+        if points is None:
             return False
-
-        for point in pts:
-            self.mapa[point[0], point[1]] = 1
-            self._notAvailable.add(point)
 
         return True
 
@@ -89,9 +88,7 @@ class Map:
                 #     ch = 'X'
                 print(ch, end="  ")
 
-            #+ " "*(len(header) - len(self._menu[i]))
             menu = self._menu[i]+ " "*(len(header) - len(self._menu[i]))  if i < len(self._menu) else ""
-            #print(menu, end="")
 
             menu += "pozostało: {}".format(self._boats[i+1]) if i<len(self._boats) else ""
             print(menu)
