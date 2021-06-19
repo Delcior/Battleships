@@ -32,18 +32,25 @@ class Map:
                     print("You cannot build this ship anymore")
                     continue
                 else:
-                    self._placeBoat(command)
+                    message = self._placeBoat(command)
+                    if not message:
+                        print("You can't put your ship there.")
 
                 self._buildingMap = not sum(self._boats.values()) == 0
             else:
                 print("Invalid option. Retry your selection.")
 
     def _placeBoat(self, length):
-        start = input("Enter the initial coordinates  [0-9],[0-9]: ")
-        start = start.split(',')
-        start = (int(start[0]), int(start[1]))
-        direction = input("Enter the direction [N, S, E, W]: ") if length > 1 else "N"
-
+        start = input("Enter the initial coordinates  [0-9],[0-9]. Default 0,0: ")
+        if len(start) == 3:
+            start = start.split(',')
+            if start[0].isdigit() and start[1].isdigit():
+                start = (int(start[0]), int(start[1]))
+        else:
+            start = (0, 0)
+        direction = input("Enter the direction [N, S, E, W]. If None by default N: ") if length > 1 else "N"
+        if direction != 'N' or direction != 'S' or direction != 'E' or direction != 'W':
+            direction = 'N'
         flag, points, map = self._chooseDirection(start, self._directions[direction], length)
         if flag:
             self.mapa = map
@@ -86,10 +93,6 @@ class Map:
                     ch = '\''
                 elif board[i, j] == 1:
                     ch = 'S'
-                elif board[i, j] == 2:
-                    ch = '*'
-                # elif board[i, j] == 3:
-                #     ch = 'X'
                 print(ch, end="  ")
 
             menu = self._menu[i] + " " * (len(header) - len(self._menu[i])) if i < len(self._menu) else ""
@@ -101,8 +104,6 @@ class Map:
         for i in range(4, 0, -1):
             self._placeBoats(i)
         return self.mapa
-        # print(self.mapa)
-        # print(np.sum(self.mapa))
 
     def _placeBoats(self, length):
         while self._boats[length] > 0:
@@ -111,8 +112,8 @@ class Map:
             coords = (x, y)  # np.array([x, y])
 
             if self._isGood(coords):
-                # 0 - góra
-                # 1 - prawo itd..
+                # 0 - up
+                # 1 - right itd..
                 for i in range(4):
                     flag, points, map = self._chooseDirection(coords, i, length)
                     if flag:

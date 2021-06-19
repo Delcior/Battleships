@@ -3,23 +3,11 @@ Serwer TCP
 '''
 import asyncio
 from time import sleep
-from utils import *
 from concurrent.futures import ThreadPoolExecutor
 import pickle
+from utils import *
 from game_server import *
 from map import *
-
-"""
-kod\r\nwiadomosc\r\nklucz..\r\n\r\n
-
-
-"211\r\nMessage=hello,give me your key.\r\nKey=key\r\nKey-len:2048\r\n\r\n"
-
-
-
-"401\r\nx:3\r\ny:4\r\n\r\n"
-
-"""
 
 
 class HelloHandshake:
@@ -120,10 +108,8 @@ class BattleshipProtocol(asyncio.Protocol):
                 self.transport.write(ciphering.encrypt(message) + b'\r\n\r\n')
                 if code == 421 or code == 422:
                     sleep(2)
-
             if code == 431 or code == 432:
-                message = "450\r\nIf u want to play again send your map\r\n\r\n"
-                self.transport.write(ciphering.encrypt(message) + b'\r\n\r\n')
+                self.transport.close()
         else:
             message = "371\r\n Message code is not valid.\r\n\r\n"
             self.transport.write(ciphering.encrypt(message) + b'\r\n\r\n')
