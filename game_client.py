@@ -1,12 +1,11 @@
-import socket
-
 import numpy as np
-import socket
 import pickle
 
 
 class Game_client:
     def __init__(self, s, board, ciph):
+        self._legend = {0:'S: statek', 1:'*: oddany strzał',
+                        2:'X: trafiony statek przeciwnika'}
         self._shooting_board = np.zeros((10,10))
         self._board = board
         self._s = s
@@ -66,17 +65,17 @@ class Game_client:
         return self._ciph.decrypt(data_rec[:-4])[:-4].decode()
 
     def _print_boards(self):
-        print("Twoja mapa =============================== Mapa strzałów")
+        print(" "*10+"Twoja mapa "+"<"+"="*29+">"+" Mapa strzałów")
 
         print("-", end="  ")
         for j in range(self._board.shape[1]):
             print(j, end="  ")
-        print("========", end="  ")
+        print("#"*8, end="  ")
         print("-", end="  ")
         for j in range(self._board.shape[1]):
             print(j, end="  ")
 
-        print()
+        print("LEGENDA:")
         for i in range(self._board.shape[0]):
             print(i, end="  ")
             for j in range(self._board.shape[1]):
@@ -90,7 +89,7 @@ class Game_client:
                 # elif self._board[i, j] == 3:
                 #     ch = 'X'
                 print(ch, end="  ")
-            print("========", end="  ")
+            print("#"*8, end="  ")
             print(i, end="  ")
             for j in range(self._shooting_board.shape[1]):
                 ch = ''
@@ -103,4 +102,6 @@ class Game_client:
                 elif self._shooting_board[i, j] == 3:
                     ch = 'X'
                 print(ch, end="  ")
-            print()
+
+            msg = self._legend[i] if i < len(self._legend) else ""
+            print(msg)

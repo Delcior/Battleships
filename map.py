@@ -9,16 +9,17 @@ class Map:
         self._boats = {1:4, 2:3, 3:2, 4:1}
         self._buildingMap = True
         self._directions = {'N':(-1,0), 'S':(1,0), 'E':(0,1), 'W':(0,-1)}
+        self._menu = {0:"[1] rozstaw jednomasztowca", 1:"[2] rozstaw dwumasztowca",
+                      2:"[3] rozstaw trójmasztowca", 3:"[4] rozstaw czteromasztowca",
+                      4:"[0] zaakceptuj (rozstaw losowo)"}
 
     def configuration(self):
         self._buildMap()
-        print("===============Twoja mapa===============")
-        print(self.mapa)
         return self.mapa
         
     def _buildMap(self):
         while self._buildingMap:
-            self.printInfo()
+            self._print_map()
             command = int(input("Wybierz opcję: "))
 
             if command == 0:
@@ -38,7 +39,7 @@ class Map:
         start = input("Podaj koordynaty początkowe [0-9],[0-9]: ")
         start = start.split(',')
         start = (int(start[0]), int(start[1]))
-        direction = input("Podaj kierunek [N, S, E, W]: ")
+        direction = input("Podaj kierunek [N, S, E, W]: ") if length > 1 else "N"
 
         pts = self._checkBoat(start, length, direction)
 
@@ -58,45 +59,22 @@ class Map:
         points = [start]
         for i in range(len-1):
             start = tuple(np.add(start, self._directions[direction]))
-            print(start)
             if not self._isGood(start):
                 return None
             points.append(start)
-        print(points)
         return points
-
 
     def _checkPoints(self, a, b, length):
         return (a[0] == b[0] or a[1] == b[1]) and (abs(a[0]-b[0]) == length or abs(a[1]-b[1]) == length)
 
-    def printInfo(self):
-        msg_choice = "Masz do wyboru:\n" \
-              " czteromasztowców: {czt}\n" \
-              " trójmasztowców: {czy}\n" \
-              " dwumasztowców:{dwa}\n" \
-              " jednomasztowców: {jed}".format(
-            czt=self._boats[4],
-            czy=self._boats[3],
-            dwa=self._boats[2],
-            jed=self._boats[1])
-
-        msg_options = "\n ====Menu====\n" \
-                      "[1] rozstaw jednomasztowiec\n" \
-                      "[2] rozstaw dwumasztowiec\n" \
-                      "[3] rozstaw trójmasztwoiec\n" \
-                      "[4] roztaw czteromasztowiec\n" \
-                      "[0] Zaakceptuj (brak statków zostanie uzupełniony losowo)"
-        self._print_map()
-        print(msg_choice,end='')
-        print(msg_options)
     def _print_map(self):
         print("Twoja mapa")
         board = self.mapa
         print("-", end="  ")
         for j in range(board.shape[1]):
             print(j, end="  ")
-
-        print()
+        header = "<"+"-"*13+"MENU"+"-"*13+"> "
+        print(header+"Statki:")
         for i in range(board.shape[0]):
             print(i, end="  ")
             for j in range(board.shape[1]):
@@ -110,7 +88,13 @@ class Map:
                 # elif board[i, j] == 3:
                 #     ch = 'X'
                 print(ch, end="  ")
-            print()
+
+            #+ " "*(len(header) - len(self._menu[i]))
+            menu = self._menu[i]+ " "*(len(header) - len(self._menu[i]))  if i < len(self._menu) else ""
+            #print(menu, end="")
+
+            menu += "pozostało: {}".format(self._boats[i+1]) if i<len(self._boats) else ""
+            print(menu)
 
     def generateMap(self):
         for i in range(4, 0, -1):

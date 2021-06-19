@@ -2,16 +2,10 @@
 Serwer TCP
 '''
 import asyncio
-import random
 from time import sleep
 from utils import *
-
-import numpy as np
 from concurrent.futures import ThreadPoolExecutor
 import pickle
-# import rsa
-import map
-from threading import Thread
 from game_server import *
 from map import *
 """
@@ -45,12 +39,9 @@ class HelloHandshake:
             return message
 
     def accept_212(self, data):
-
         headers = HandshakeParser(data)
-        # assert headers['key-len'] >= 2048
 
         if headers['code'] == 211 and self.codes[201]:
-            #print(headers['key'])
             ciphering.set_pubKey2(headers['key'])
             self.finished = True
             return '210\r\nMessage=Od teraz wszystkie wiadomosci sa szyfrowane\r\n\r\n' \
@@ -58,7 +49,6 @@ class HelloHandshake:
 
         return "301\r\nERROR"
         # klient 211\r\nMessage=There is my key\r\nKey={key}\r\nKey-len=2048\r\n\r\n
-    # def accept_202(self, data):
 
 
 class BattleshipProtocol(asyncio.Protocol):
@@ -82,11 +72,9 @@ class BattleshipProtocol(asyncio.Protocol):
             elif int(data[:3]) == 211:
                 message = self.HelloHandshake.accept_212(data)
                 self.transport.write(message.encode())
-                #self.encrypted = True
                 print(message)
             return
-        #tu decrypt
-        print(data)
+
         data = ciphering.decrypt(data)
         asyncio.create_task(self.game_async(data))
 
@@ -117,7 +105,7 @@ class BattleshipProtocol(asyncio.Protocol):
                 message = client_map
                 self.transport.write(ciphering.encrypt(message)+b'\r\n\r\n')
                 if code == 421 or code == 422:
-                    sleep(5)
+                    sleep(3)
 
             if code == 431 or code == 432:
                 message = "450\r\nIf u want to play again send your map\r\n\r\n"
@@ -126,17 +114,11 @@ class BattleshipProtocol(asyncio.Protocol):
     def connection_lost(self, ex):
         print('Client {} disconnected'.format(self.addr))
 
-    # async def async_fib(self, fib_num):
-    #     task = await loop.run_in_executor(thread_pool, Fib, fib_num)
-    #
-    #     response = (str(task) + "\r\n").encode()
-    #     self.transport.write(response)
-
 
 ciphering = EncryptorDecryptor()
 thread_pool = ThreadPoolExecutor()
 loop = asyncio.get_event_loop()
-coroutine = loop.create_server(BattleshipProtocol, host='localhost', port=1769)
+coroutine = loop.create_server(BattleshipProtocol, host='localhost', port=1770)
 server = loop.run_until_complete(coroutine)
 
 loop.run_forever()

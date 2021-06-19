@@ -5,6 +5,8 @@ from Crypto.Cipher import PKCS1_OAEP
 class EncryptorDecryptor:
     def __init__(self):
         self.keyLen = 2048
+        self._enc_block_size = self.keyLen//8 - 43
+        self._dec_block_size = self.keyLen//8
         self._key = RSA.generate(self.keyLen)
 
         self.privKey = self._key.export_key('PEM')
@@ -18,17 +20,16 @@ class EncryptorDecryptor:
         self.pubKey2 = None
 
     def encrypt(self, message):
-        if len(message) >= self.keyLen//8:
+        if len(message) > self._enc_block_size:
             return self._partial_enc(message)
         if type(message) != bytes:
             message = message.encode()
-
         return self.pubKey2.encrypt(message)
 
     def _partial_enc(self, message):
         result = b''
 
-        lo, hi, l = 0, 200, len(message)
+        lo, hi, l= 0,self._enc_block_size, len(message)
 
         while True:
             if hi > l:
@@ -36,23 +37,19 @@ class EncryptorDecryptor:
                 break
             result+=self.encrypt(message[lo:hi])
             lo = hi
-            hi += 200
+            hi += self._enc_block_size
 
-        print("enc_len ", len(result))
         return result
 
     def decrypt(self, message):
 
-        if len(message) > self.keyLen//8:
+        if len(message) > self._dec_block_size:
             return self._partial_dec(message)
-        #print((message))
-        print("---", len(message))
         return self.privKey.decrypt(message)
 
     def _partial_dec(self, message):
         result = b''
-
-        lo, hi, l = 0, self.keyLen//8, len(message)
+        lo, hi, l = 0, self._dec_block_size, len(message)
 
         while True:
             if hi >= l:
@@ -60,9 +57,8 @@ class EncryptorDecryptor:
                 break
             result+=self.decrypt(message[lo:hi])
             lo = hi
-            hi += self.keyLen//8
+            hi += self._dec_block_size
 
-        print("den_len ", len(result))
         return result
 
     def get_pubKey(self):
@@ -95,11 +91,11 @@ def HandshakeParser(data):
     return results
 
 
-#enc = EncryptorDecryptor()
-
+# enc = EncryptorDecryptor()
+#
 # aa = b'123r2wefdewfwfwefwef123r2wefdewfwfwefwef123r2wefdewfwfwefwef123r2wefdewfwfwefwef123ewfwfwefwef123r2wefdewfwfwefwef123r2wefdewfwfwefwef123r2wefdewfwfwefwef123r2wefdewewfwfwefwef123r2wefdewfwfwefwef123r2wefdewfwfwefwef123r2wefdewfwfwefwef123r2wefdewewfwfwefwef123r2wefdewfwfwefwef123r2wefdewfwfwefwef123r2wefdewfwfwefwef123r2wefdewewfwfwefwef123r2wefdewfwfwefwef123r2wefdewfwfwefwef123r2wefdewfwfwefwef123r2wefdewewfwfwefwef123r2wefdewfwfwefwef123r2wefdewfwfwefwef123r2wefdewfwfwefwef123r2wefdewr2wefdewfwfwefwef123r2wefdewfwfwefwef123r2wefdewfwfwefwef123r2wefdewfwfwefwef\r\n'
-# print("pre_len ",type(aa) == bytes)
-# #aa = enc.encrypt(aa)
+# #print("pre_len ",type(aa) == bytes)
+# aa = enc.encrypt(aa)
 # print("post_len ", len(aa), aa)
 # #aa = enc.decrypt(aa)
 # print("post2_len ", len(aa), aa)
