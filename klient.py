@@ -27,42 +27,63 @@ def rec_(sock, crlf):
 
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 try:
-
-
+    # connect to server without ciphering
     s.connect(('localhost', 1770))
 
-    hello = "201\r\nHello"
-    klucz = "211\r\nMessage=My key\r\nKey={}\r\nKey-len=2048\r\n\r\n".format(ciphering.get_pubKey().decode())
-    s.sendall(str(hello).encode())
-    message_rec = rec_(s, CRLF)
-    headers = HandshakeParser(message_rec)
-    ciphering.set_pubKey2(headers['key'])
+    # send hello message
+    hello_message = "201\r\nHello\r\n\r\n"
+    s.sendall(str(hello_message).encode())
 
-    s.sendall(klucz.encode())
-    msg2 = rec_(s, CRLF)
-    #print("=-====", msg2)
-    msg3 = rec_(s, CRLF)
-    #print("======", msg3)
+    # get message from server about handshake
+    handshake_rec = rec_(s, CRLF)
 
-    Map = Map()
-    board = Map.configuration()
-    board_to_send = b"400\r\n" + pickle.dumps(board)
-    #print("len ", len(board_to_send))
-    aa = ciphering.encrypt(board_to_send)
-    #print(aa)
-    s.sendall((aa))
-    msg4 = rec(s, CRLF)
-    print("\n"+msg4.split('\n')[1])
+    code = int(handshake_rec[:3])
+    if code != 211:
+        print(handshake_rec[4:])
+    else:
+        # if got proper code, parse response
+        headers = HandshakeParser(handshake_rec)
 
-    # rozgrywka
+        # set server public key
+        ciphering.set_pubKey2(headers['key'])
 
-    game = Game_client(s, board, ciphering)
-    game.startGame()
+        # send my public key
+        key = "212\r\nMessage=My key\r\nKey-len=2048\r\nKey={}\r\n\r\n".format(ciphering.get_pubKey().decode())
+
+        s.sendall(key.encode())
+
+        # get reposnonse about my ciphering key
+        ciphering_msg = rec_(s, CRLF)
+        code = int(ciphering_msg[:3])
+        if code != 210:
+            print(ciphering_msg[4:])
+        else:
+            # get information message about building map
+            info_msg = rec_(s, CRLF)
+            code = int(info_msg[:3])
+            if code != 101:
+                print(info_msg)
+            else:
+                Map = Map()
+                board = Map.configuration()
+                board_to_send = b"400\r\n" + pickle.dumps(board)
+                encrypted_message = ciphering.encrypt(board_to_send)
+                s.sendall(encrypted_message)
+
+                begin_game_msg = rec(s, CRLF)
+                code = int(begin_game_msg[:3])
+                if code != 401:
+                    print(begin_game_msg[4:])
+                else:
+                    print("\n" + begin_game_msg[4:])
+
+                    # start game
+
+                    game = Game_client(s, board, ciphering)
+                    game.startGame()
 
     s.close()
 except socket.error:
     print('Error')
 except KeyboardInterrupt:
     s.close()
-
-"421\r\nI shoot {x},{y} I hit!\r\n\r\ndasdsadsadsadsadsadasdsadasdsa"

@@ -17,23 +17,25 @@ class Map:
     def configuration(self):
         self._buildMap()
         return self.mapa
-        
+
     def _buildMap(self):
         while self._buildingMap:
             self._print_map()
-            command = int(input("Wybierz opcję: "))
+            command = input("Wybierz opcję: ")
+            if command.isdigit():
+                command = int(command)
+                if command == 0:
+                    self.generateMap()
 
-            if command == 0:
-                self.generateMap()
+                elif self._boats[command] == 0:
+                    print("Nie możesz już postawić tego statku")
+                    continue
+                else:
+                    self._placeBoat(command)
 
-            elif self._boats[command] == 0:
-                print("Nie możesz już postawić tego statku")
-                continue
+                self._buildingMap = not sum(self._boats.values()) == 0
             else:
-                self._placeBoat(command)
-
-            self._buildingMap = not sum(self._boats.values()) == 0
-
+                print("Opcja niepoprawna. Ponów wybór.")
     def _placeBoat(self, length):
         start = input("Podaj koordynaty początkowe [0-9],[0-9]: ")
         start = start.split(',')

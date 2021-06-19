@@ -8,6 +8,7 @@ from concurrent.futures import ThreadPoolExecutor
 import pickle
 from game_server import *
 from map import *
+
 """
 kod\r\nwiadomosc\r\nklucz..\r\n\r\n
 
@@ -31,85 +32,102 @@ class HelloHandshake:
         Funkcja przyjmuje wiadomość powitalną, zwraca ramkę z odpowiedzią
         (klucz publiczny serwera i długość tego klucza)
         """
-        if data == "201\r\nHello":
+        if data == "201\r\nHello\r\n\r\n":
             self.codes[201] = True
             message = "211\r\nMessage=Hello,give me your key.\r\n" \
-                      "Key={key}\r\nKey-len=2048\r\n\r\n".format(
+                      "Key-len=2048\r\n" \
+                      "Key={key}\r\n\r\n".format(
                 key=ciphering.get_pubKey().decode())
             return message
+        return "399:\r\nMessage not recognized. Try again\r\n\r\n"
 
     def accept_212(self, data):
-        headers = HandshakeParser(data)
+        if "212\r\nMessage=My key\r\nKey-len=2048\r\nKey=" in data:
+            headers = HandshakeParser(data)
+            print(data)
+            if headers['key'] == 'Bad key':
+                return "397: Key format is not valid.\r\n\r\n"
+            if headers['code'] == 212 and self.codes[201]:
+                try:
+                    ciphering.set_pubKey2(headers['key'])
+                except:
+                    return "396: Key is not valid. Try again\r\n\r\n"
+                self.finished = True
+                return '210\r\nMessage=Od teraz wszystkie wiadomosci sa szyfrowane\r\n\r\n' \
+                       '101\r\nInfo:Zbuduj mape\r\n\r\n'
 
-        if headers['code'] == 211 and self.codes[201]:
-            ciphering.set_pubKey2(headers['key'])
-            self.finished = True
-            return '210\r\nMessage=Od teraz wszystkie wiadomosci sa szyfrowane\r\n\r\n' \
-                   '101\r\nInfo:Zbuduj mape\r\n\r\n'
-
-        return "301\r\nERROR"
-        # klient 211\r\nMessage=There is my key\r\nKey={key}\r\nKey-len=2048\r\n\r\n
+        return "398:\r\nMessage type not recognized. Try again. Remember we accept only RSA keys with length " \
+               "2048\r\n\r\n "
 
 
 class BattleshipProtocol(asyncio.Protocol):
     def connection_made(self, transport):
-        self.encrypted = False
         self.transport = transport
         self.addr = transport.get_extra_info('peername')
-        self._rest = b''
-        self.name = None
         self.HelloHandshake = HelloHandshake()
         self.game_server = Game_server()
+        self.encrypted = False
         print('Connection from {}'.format(self.addr))
 
     def data_received(self, data):
-        if not self.HelloHandshake.finished:
-            data = data.decode()
-            if int(data[:3]) == 201:
-                message = self.HelloHandshake.accept_201(data)
-                self.transport.write(message.encode())
-                print(message)
-            elif int(data[:3]) == 211:
-                message = self.HelloHandshake.accept_212(data)
-                self.transport.write(message.encode())
-                print(message)
-            return
+        if not self.encrypted and data[:3].isdigit():
+            if not self.HelloHandshake.finished:
+                code = int(data[:3])
+                data = data.decode()
+                if code == 201:
+                    message = self.HelloHandshake.accept_201(data)
+                    self.transport.write(message.encode())
+                elif code == 212:
+                    message = self.HelloHandshake.accept_212(data)
+                    self.transport.write(message.encode())
+                else:
+                    message = "371\r\n Message code is not valid.\r\n\r\n"
+                    self.transport.write(message.encode())
+                return
 
         data = ciphering.decrypt(data)
-        asyncio.create_task(self.game_async(data))
+        if data[:3].isdigit():
+            asyncio.create_task(self.game_async(data))
+        else:
+            message = "370\r\n Message without a code. Not valid.\r\n\r\n"
+            if self.encrypted:
+                self.transport.write(ciphering.encrypt(message) + b'\r\n\r\n')
 
     async def game_async(self, data):
         await loop.run_in_executor(thread_pool, self.game, data)
 
     def game(self, data):
-        if int(data[:3].decode()) == 400:
+        code = int(data[:3].decode())
+        if code == 400:
             data = data[5:]
             client_map = pickle.loads(data)
 
             self.game_server.setMap("client", client_map)
             server_map = Map().generateMap()
-            print(server_map)
             self.game_server.setMap("server", server_map)
             message = "401\r\nLet the game begin!\r\n\r\n"
-            self.transport.write(ciphering.encrypt(message)+b'\r\n\r\n')
+            self.transport.write(ciphering.encrypt(message) + b'\r\n\r\n')
 
-        elif int(data[:3].decode()) == 405:
+        elif code == 405:
             code, message = self.game_server.client_move(data.decode())
-            self.transport.write(ciphering.encrypt(message)+b'\r\n\r\n')
+            self.transport.write(ciphering.encrypt(message) + b'\r\n\r\n')
 
             while code == 421 or code == 422 or code == 413:
                 code, message, client_map = self.game_server.server_move()
                 message = message.encode()
                 client_map = pickle.dumps(client_map) + b"\r\n\r\n"
-                self.transport.write(ciphering.encrypt(message)+b'\r\n\r\n')
+                self.transport.write(ciphering.encrypt(message) + b'\r\n\r\n')
                 message = client_map
-                self.transport.write(ciphering.encrypt(message)+b'\r\n\r\n')
+                self.transport.write(ciphering.encrypt(message) + b'\r\n\r\n')
                 if code == 421 or code == 422:
                     sleep(3)
 
             if code == 431 or code == 432:
                 message = "450\r\nIf u want to play again send your map\r\n\r\n"
-                self.transport.write(ciphering.encrypt(message)+b'\r\n\r\n')
+                self.transport.write(ciphering.encrypt(message) + b'\r\n\r\n')
+        else:
+            message = "371\r\n Message code is not valid.\r\n\r\n"
+            self.transport.write(ciphering.encrypt(message) + b'\r\n\r\n')
 
     def connection_lost(self, ex):
         print('Client {} disconnected'.format(self.addr))
@@ -122,5 +140,3 @@ coroutine = loop.create_server(BattleshipProtocol, host='localhost', port=1770)
 server = loop.run_until_complete(coroutine)
 
 loop.run_forever()
-
-

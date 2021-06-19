@@ -5,8 +5,8 @@ from Crypto.Cipher import PKCS1_OAEP
 class EncryptorDecryptor:
     def __init__(self):
         self.keyLen = 2048
-        self._enc_block_size = self.keyLen//8 - 43
-        self._dec_block_size = self.keyLen//8
+        self._enc_block_size = self.keyLen // 8 - 43
+        self._dec_block_size = self.keyLen // 8
         self._key = RSA.generate(self.keyLen)
 
         self.privKey = self._key.export_key('PEM')
@@ -29,13 +29,13 @@ class EncryptorDecryptor:
     def _partial_enc(self, message):
         result = b''
 
-        lo, hi, l= 0,self._enc_block_size, len(message)
+        lo, hi, l = 0, self._enc_block_size, len(message)
 
         while True:
             if hi > l:
-                result+=self.encrypt(message[lo:])
+                result += self.encrypt(message[lo:])
                 break
-            result+=self.encrypt(message[lo:hi])
+            result += self.encrypt(message[lo:hi])
             lo = hi
             hi += self._enc_block_size
 
@@ -53,9 +53,9 @@ class EncryptorDecryptor:
 
         while True:
             if hi >= l:
-                result+=self.decrypt(message[lo:])
+                result += self.decrypt(message[lo:])
                 break
-            result+=self.decrypt(message[lo:hi])
+            result += self.decrypt(message[lo:hi])
             lo = hi
             hi += self._dec_block_size
 
@@ -72,30 +72,18 @@ class EncryptorDecryptor:
 def HandshakeParser(data):
     results = {}
     data = data.split('\r\n')
-    try:
-
-        code = int(data[0])
-    except ValueError:
-        return '302\r\nBAD CODE ERROR'
+    # not possible to not get int in string
+    code = int(data[0])
 
     results['code'] = code
 
-    # TODO:co jesli jest blad
     if "Message=" == data[1][:8]:
         results['message'] = data[1][8:]
-    if "Key=" == data[2][:4]:
-        results['key'] = data[2][4:]
-    if "Key-len=" == data[3][:8]:
-        results['key-len'] = int(data[3][8:])
-
+    if "Key-len=" == data[2][:8]:
+        results['key-len'] = int(data[2][8:])
+    if len(data[3]) == 454:  # check if rsa key exists in array and it's length is correct
+        if "Key=" == data[3][:4]:
+            results['key'] = data[3][4:]
+    else:
+        results['key'] = 'Bad key'
     return results
-
-
-# enc = EncryptorDecryptor()
-#
-# aa = b'123r2wefdewfwfwefwef123r2wefdewfwfwefwef123r2wefdewfwfwefwef123r2wefdewfwfwefwef123ewfwfwefwef123r2wefdewfwfwefwef123r2wefdewfwfwefwef123r2wefdewfwfwefwef123r2wefdewewfwfwefwef123r2wefdewfwfwefwef123r2wefdewfwfwefwef123r2wefdewfwfwefwef123r2wefdewewfwfwefwef123r2wefdewfwfwefwef123r2wefdewfwfwefwef123r2wefdewfwfwefwef123r2wefdewewfwfwefwef123r2wefdewfwfwefwef123r2wefdewfwfwefwef123r2wefdewfwfwefwef123r2wefdewewfwfwefwef123r2wefdewfwfwefwef123r2wefdewfwfwefwef123r2wefdewfwfwefwef123r2wefdewr2wefdewfwfwefwef123r2wefdewfwfwefwef123r2wefdewfwfwefwef123r2wefdewfwfwefwef\r\n'
-# #print("pre_len ",type(aa) == bytes)
-# aa = enc.encrypt(aa)
-# print("post_len ", len(aa), aa)
-# #aa = enc.decrypt(aa)
-# print("post2_len ", len(aa), aa)
