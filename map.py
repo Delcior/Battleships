@@ -49,7 +49,8 @@ class Map:
         else:
             start = (0, 0)
         direction = input("Enter the direction [N, S, E, W]. If None by default N: ") if length > 1 else "N"
-        if direction != 'N' or direction != 'S' or direction != 'E' or direction != 'W':
+
+        if direction != 'N' and direction != 'S' and direction != 'E' and direction != 'W':
             direction = 'N'
         flag, points, map = self._chooseDirection(start, self._directions[direction], length)
         if flag:
